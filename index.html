@@ -28360,13 +28360,15 @@ var qi=document.getElementById('q'),rs=document.getElementById('results');
 var SI=null,SACT=-1;
 function snorm(s){return (s||'').replace(/[\u0591-\u05C7]/g,'').replace(/[׳'’`"״]/g,'').replace(/ך/g,'כ').replace(/ם/g,'מ').replace(/ן/g,'נ').replace(/ף/g,'פ').replace(/ץ/g,'צ').replace(/\s+/g,' ').trim().toLowerCase();}
 function simg(i,cls){return (i!=null&&typeof IMGS!=='undefined'&&IMGS[i])?'<img'+(cls?' class="'+cls+'"':'')+' src="'+IMGS[i]+'" alt="">':'';}
+var CALIAS={'תוניסיה':'טוניסיה','בוצואנה':'בוטסואנה','קונגו הדמוקרטית':'הרפובליקה הדמוקרטית של קונגו','שוויץ':'שווייץ'};
+function cnorm(n){n=(n||'').trim();n=CALIAS[n]||n;return n.replace(/['\u05f3\u2019`]/g,'');}
 function sbuild(){
   var out=[],flagBy={},mapBy={};
   var cs=document.querySelectorAll('#page-countries a.row[href]');
   cs.forEach(function(a){
     var slug=a.getAttribute('href').replace(/^#\/?/,''),b=a.querySelector('b'),d=a.querySelector('.d'),m=a.querySelector('.dir-map img'),f=a.querySelector('.flag img');
     if(!b)return; var name=b.textContent.trim(),fi=f?f.getAttribute('data-i'):null,mi=m?m.getAttribute('data-i'):null;
-    flagBy[name]=fi; mapBy[name]=mi;
+    flagBy[name]=fi; mapBy[name]=mi; flagBy[cnorm(name)]=fi; mapBy[cnorm(name)]=mi;
     var cont=(d?d.textContent.trim():'').split('·')[0].trim();
     out.push({k:'c',n:name,key:snorm(name),t:slug,mi:mi,fi:fi,d:['מדינה'+(cont&&cont.indexOf('בירה')<0?' ב'+cont:'')].concat((d&&d.textContent.indexOf('בירה:')>-1)?[d.textContent.substring(d.textContent.indexOf('בירה:')).trim()]:[])});
   });
@@ -28375,7 +28377,7 @@ function sbuild(){
     if(!s.querySelector('.chead'))return;
     var slug=s.id.replace(/^page-/,''),h=s.querySelector('.chead h1'),f=s.querySelector('.chead .fact');if(!h)return;
     var place=(f?f.textContent.split('·')[0].trim():'');var parts=place.split(',');var country=parts[parts.length-1].trim();
-    out.push({k:'t',n:h.textContent.trim(),key:snorm(h.textContent),t:slug,fi:flagBy[country]||null,mi:mapBy[country]||null,mj:!!mj[slug],d:place.split(',').map(function(p,i){return (i?'':'עיר ב')+p.trim();})});
+    out.push({k:'t',n:h.textContent.trim(),key:snorm(h.textContent),t:slug,fi:flagBy[country]||flagBy[cnorm(country)]||null,mi:mapBy[country]||mapBy[cnorm(country)]||null,mj:!!mj[slug],d:place.split(',').map(function(p,i){return (i?'':'עיר ב')+p.trim();})});
   });
   if(INCLUDE_STATES){document.querySelectorAll('#page-usa a.row[href]').forEach(function(a){var b=a.querySelector('b');if(!b)return;var f=a.querySelector('.flag img'),m=a.querySelector('.dir-map img');out.push({k:'s',n:b.textContent.trim(),key:snorm(b.textContent),t:a.getAttribute('href').replace(/^#\/?/,''),mi:m?m.getAttribute('data-i'):null,fi:f?f.getAttribute('data-i'):null,d:['מדינה בארצות הברית']});});}
   return out;
@@ -28405,8 +28407,11 @@ function srender(){
   if(!q){rs.hidden=true;qi.setAttribute('aria-expanded','false');return;}
   var hits=ssearch(q);rs.hidden=false;qi.setAttribute('aria-expanded','true');
   rs.setAttribute('role','listbox');rs.classList.add('sr-list');
-  rs.innerHTML=hits.slice(0,30).map(function(x,i){return srow(x,i,q);}).join('')||'<div class="row"><span class="txt"><b>לא נמצאו תוצאות</b></span></div>';
+  rs.style.maxHeight='';rs.innerHTML=hits.slice(0,30).map(function(x,i){return srow(x,i,q);}).join('')||'<div class="row"><span class="txt"><b>לא נמצאו תוצאות</b></span></div>';
+  if(typeof sfit==='function')sfit();
 }
+function sfit(){if(!rs||rs.hidden)return;var vh=(window.visualViewport?window.visualViewport.height:window.innerHeight);var t=rs.getBoundingClientRect().top;rs.style.maxHeight=Math.max(160,Math.floor(vh-Math.max(t,0)-16))+'px';}
+window.addEventListener('resize',sfit);window.addEventListener('scroll',sfit,{passive:true});if(window.visualViewport)window.visualViewport.addEventListener('resize',sfit);
 function sact(n){var as=rs.querySelectorAll('a.sr');if(!as.length)return;as.forEach(function(a){a.classList.remove('active');a.removeAttribute('aria-selected');});SACT=(n+as.length)%as.length;var a=as[SACT];a.classList.add('active');a.setAttribute('aria-selected','true');qi.setAttribute('aria-activedescendant',a.id);a.scrollIntoView({block:'nearest'});}
 if(qi){
   qi.setAttribute('autocomplete','off');qi.setAttribute('role','combobox');qi.setAttribute('aria-controls','results');qi.setAttribute('aria-expanded','false');
